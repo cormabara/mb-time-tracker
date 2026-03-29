@@ -1,0 +1,3 @@
+[submodule "mb-libs"]
+	path = mb-libs
+	url = https://github.com/cormabara/python-mblibs.git
