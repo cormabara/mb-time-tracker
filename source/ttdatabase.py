@@ -3,6 +3,9 @@ from datetime import datetime, timezone
 import mariadb
 import sys
 
+from mb_logger import Logger
+
+
 class TTDatabase:
 
     create_table_data_sql = """
@@ -10,7 +13,7 @@ class TTDatabase:
       `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
       `date` DATE NOT NULL,
       `minutes` INT NOT NULL,
-      `category` VARCHAR(100) NOT NULL,
+      `deal` VARCHAR(100) NOT NULL,
       `activity` VARCHAR(200) NOT NULL,
       `description` TEXT,
       `tag` VARCHAR(100),
@@ -52,7 +55,7 @@ class TTDatabase:
 
         self.cur = self.conn.cursor()
         self.create_tables()
-        self.add_dummy()
+        # self.add_dummy()
 
 
     def create_tables(self):
@@ -106,28 +109,51 @@ class TTDatabase:
         if last_id:
             cur.close()
             return last_id
+
         cur.execute("""
                     SELECT id
                     FROM tt_activity
                     WHERE name = ?
                         AND deal_id = ?
                     LIMIT 1
-                    """, (name))
+                    """, (name,deal_id))
         row = cur.fetchone()
         cur.close()
         return row[0] if row else 0
 
-    def insert_data_entry(self, date, minutes, category, activity, description=None, tag=None):
+    def insert_data_entry(self, date, minutes, deal, activity, description=None, tag=None):
+        """
+        Inserts a data entry into the 'tt_data' table in the database if it does not already exist.
+        The function ensures that duplicate entries based on given parameters are avoided
+        to maintain data consistency.
+
+        Parameters:
+        date (str): The date corresponding to the entry.
+        minutes (int): The duration in minutes to be recorded.
+        deal (str): The deal associated with the activity.
+        activity (str): The specific activity name or description.
+        description (Optional[str]): Additional details related to the activity. Defaults to None.
+        tag (Optional[str]): Optional tagging for the activity entry. Defaults to None.
+
+        Returns:
+        Optional[int]: The ID of the newly inserted or existing row in the 'tt_data' table.
+        Returns None if no ID is found.
+
+        Raises:
+        OperationalError: If an error occurs during the execution of the SQL statement.
+        """
+
+
         sql = """
-              INSERT INTO tt_data (date, minutes, category, activity, description, tag)
+              INSERT INTO tt_data (date, minutes, deal, activity, description, tag)
               SELECT ?, ?, ?, ?, ?, ?
               WHERE NOT EXISTS (
                     SELECT 1 FROM tt_data  
-                    WHERE date = ? AND minutes = ? AND category = ? AND activity = ?);
+                    WHERE date = ? AND minutes = ? AND deal = ? AND activity = ?);
               """
         cur = self.conn.cursor()
-        params = (date, minutes, category, activity, description, tag,
-                  date, minutes, category, activity)
+        params = (date, minutes, deal, activity, description, tag,
+                  date, minutes, deal, activity)
         cur.execute(sql, params)
         self.conn.commit()
         last_id = cur.lastrowid
@@ -138,11 +164,10 @@ class TTDatabase:
                     SELECT id
                     FROM tt_data
                     WHERE date = ?
-                      AND minutes = ?
-                      AND category = ?
+                      AND deal = ?
                       AND activity = ?
                     LIMIT 1
-                    """, (date, minutes, category, activity))
+                    """, (date, deal, activity))
         row = cur.fetchone()
         cur.close()
         return row[0] if row else None
@@ -153,7 +178,7 @@ class TTDatabase:
         deal_id = self.insert_deal_entry(deal_dummy, description="test deal")
         act_id = self.insert_activity_entry(act_dummy, "test activity",deal_id)
         self.insert_data_entry(datetime.fromtimestamp(0, tz=timezone.utc),
-                               1, deal_id, act_id,
+                               180, deal_id, act_id,
                                description="test data", tag=None)
 
     def query(self):
@@ -171,3 +196,14 @@ class TTDatabase:
     def close(self):
         self.cur.close()
         self.conn.close()
+
+
+    def find_tasks(self, start_, end_):
+        try:
+            self.cur = self.conn.cursor(dictionary=True)  # dictionary=True -> rows as dicts
+            self.cur.execute("SELECT * FROM tt_data WHERE date <= ? AND date >= ?",(end_,start_))
+            rows = self.cur.fetchall()  # returns list of dicts
+        except Exception as e:
+            Logger().print(e)
+            rows = []
+        return rows
