@@ -2,6 +2,16 @@ import os
 import sys
 from enum import IntEnum, Enum
 
+
+class Colors(Enum):
+    BG = "#2f2f2f"
+    SIDEBAR = "#3a3a3a"
+    TOPBAR = "#252525"
+    ROW_BG = "#343434"
+    TEXT = "#dcdcdc"
+    ACCENT = "#b6e3c6"
+
+
 prj_path = os.path.dirname(__file__)
 res_path = os.path.join(prj_path, '../resources')
 ico_path = os.path.join(res_path, 'icons/dark')

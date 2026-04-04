@@ -31,7 +31,7 @@ class TTDatabase:
     """
 
     create_table_activity_sql = """
-    CREATE TABLE IF NOT EXISTS `tt_activity` (
+    CREATE TABLE IF NOT EXISTS `tt_activities` (
       `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
       `name` VARCHAR(100) NOT NULL,
       `description` TEXT,
@@ -97,7 +97,7 @@ class TTDatabase:
               INSERT INTO tt_activity (name, description,deal_id)
               SELECT ?, ?, ?
               WHERE NOT EXISTS (
-                    SELECT 1 FROM tt_activity  
+                    SELECT 1 FROM tt_activities  
                     WHERE name = ? AND deal_id = ?);
               """
         cur = self.conn.cursor()
@@ -112,7 +112,7 @@ class TTDatabase:
 
         cur.execute("""
                     SELECT id
-                    FROM tt_activity
+                    FROM tt_activities
                     WHERE name = ?
                         AND deal_id = ?
                     LIMIT 1
@@ -142,7 +142,7 @@ class TTDatabase:
         Raises:
         OperationalError: If an error occurs during the execution of the SQL statement.
         """
-
+        cur = self.conn.cursor()
 
         sql = """
               INSERT INTO tt_data (date, minutes, deal, activity, description, tag)
@@ -151,7 +151,6 @@ class TTDatabase:
                     SELECT 1 FROM tt_data  
                     WHERE date = ? AND minutes = ? AND deal = ? AND activity = ?);
               """
-        cur = self.conn.cursor()
         params = (date, minutes, deal, activity, description, tag,
                   date, minutes, deal, activity)
         cur.execute(sql, params)
@@ -207,3 +206,15 @@ class TTDatabase:
             Logger().print(e)
             rows = []
         return rows
+
+    def find_deal_from_id(self,id_):
+        self.cur = self.conn.cursor(dictionary=True)
+        self.cur.execute("SELECT * FROM tt_deals WHERE id = ?", (id_,))
+        row = self.cur.fetchone()  # returns list of dicts
+        return row["name"] if row else None
+
+    def find_activity_from_id(self,id_):
+        self.cur = self.conn.cursor(dictionary=True)
+        self.cur.execute("SELECT * FROM tt_activities WHERE id = ? ", (id_,))
+        row = self.cur.fetchone()  # returns list of dicts
+        return row["name"] if row else None
