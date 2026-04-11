@@ -192,6 +192,18 @@ class TTDatabase:
         rows = self.cur.fetchall()  # returns list of dicts
         return rows
 
+    def get_deals_names(self):
+        self.cur = self.conn.cursor(dictionary=True)  # dictionary=True -> rows as dicts
+        self.cur.execute("SELECT name FROM tt_deals")  # or custom query
+        rows = self.cur.fetchall()  # returns list of dicts
+        return [row['name'] for row in rows]
+
+    def get_activities_names(self):
+        self.cur = self.conn.cursor(dictionary=True)  # dictionary=True -> rows as dicts
+        self.cur.execute("SELECT name FROM tt_activities")  # or custom query
+        rows = self.cur.fetchall()  # returns list of dicts
+        return [row['name'] for row in rows]
+
     def close(self):
         self.cur.close()
         self.conn.close()
@@ -207,14 +219,42 @@ class TTDatabase:
             rows = []
         return rows
 
+    def find_deal(self,deal_name_):
+        self.cur = self.conn.cursor(dictionary=True)
+        self.cur.execute("SELECT * FROM tt_deals WHERE name = ?", (deal_name_,))
+        row = self.cur.fetchone()  # returns list of dicts
+        return row if row else None
+
     def find_deal_from_id(self,id_):
         self.cur = self.conn.cursor(dictionary=True)
         self.cur.execute("SELECT * FROM tt_deals WHERE id = ?", (id_,))
         row = self.cur.fetchone()  # returns list of dicts
         return row["name"] if row else None
 
+    def find_activity(self, activity_name_,deal_id_):
+        self.cur = self.conn.cursor(dictionary=True)
+        self.cur.execute("SELECT * FROM tt_activities WHERE name = ? AND deal_id = ?", (activity_name_,deal_id_))
+        row = self.cur.fetchone()  # returns list of dicts
+        return row if row else None
+
     def find_activity_from_id(self,id_):
         self.cur = self.conn.cursor(dictionary=True)
         self.cur.execute("SELECT * FROM tt_activities WHERE id = ? ", (id_,))
         row = self.cur.fetchone()  # returns list of dicts
         return row["name"] if row else None
+
+    def add_task(self, date_, time_, deal_, activity_, description_):
+        """Insert a task into the SQLite database and return the new row id."""
+        sql = """
+              INSERT INTO tt_data (date, minutes, deal, activity, description)
+              VALUES (?, ?, ?, ?, ?) 
+              """
+        try:
+            cur = self.conn.cursor()
+            cur.execute(sql, (date_, time_, deal_, activity_, description_))
+            self.conn.commit()
+            return cur.lastrowid
+        except Exception as e:
+            Logger().print(f" Exception during insert: {e}")
+            raise
+
