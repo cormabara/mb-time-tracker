@@ -1,7 +1,5 @@
-import os
 import wx
-from gui_wx import Mainframe
-from source.wx_tt_mainwin import TTMainWin
+from source.gui.wx_tt_mainwin import TTMainWin
 from ttdatabase import TTDatabase
 
 def main():

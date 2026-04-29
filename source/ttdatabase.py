@@ -198,9 +198,15 @@ class TTDatabase:
         rows = self.cur.fetchall()  # returns list of dicts
         return [row['name'] for row in rows]
 
-    def get_activities_names(self):
+    def get_activities_names(self,deal_name):
+        if not deal_name or deal_name == "":
+            return []
+        deal = self.find_deal_by_name(deal_name)
+        if deal is None:
+            return []
+        deal_id = deal['id']
         self.cur = self.conn.cursor(dictionary=True)  # dictionary=True -> rows as dicts
-        self.cur.execute("SELECT name FROM tt_activities")  # or custom query
+        self.cur.execute("SELECT name FROM tt_activities WHERE deal_id = ?",(deal_id,))  # or custom query
         rows = self.cur.fetchall()  # returns list of dicts
         return [row['name'] for row in rows]
 
@@ -219,7 +225,7 @@ class TTDatabase:
             rows = []
         return rows
 
-    def find_deal(self,deal_name_):
+    def find_deal_by_name(self, deal_name_):
         self.cur = self.conn.cursor(dictionary=True)
         self.cur.execute("SELECT * FROM tt_deals WHERE name = ?", (deal_name_,))
         row = self.cur.fetchone()  # returns list of dicts
