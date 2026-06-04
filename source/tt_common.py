@@ -2,6 +2,8 @@ import os
 import sys
 from enum import IntEnum, Enum
 
+import wx
+
 
 class Colors(Enum):
     BG = "#2f2f2f"
@@ -34,4 +36,17 @@ def get_usr_data(name_=""):
 
 class TTErrors(IntEnum):
     tt_e_none = 0
+
+
+# Helper per colore/stile
+class GuiCol(Enum):
+    BG = "#2f2f2f"
+    SIDEBAR = "#3a3a3a"
+    TOPBAR = "#252525"
+    ROW_BG = "#343434"
+    TEXT = "#dcdcdc"
+    ACCENT = "#b6e3c6"
+
+    def wx(self) -> wx.Colour:
+        return wx.Colour(self.value)
 

@@ -7,127 +7,13 @@ from datetime import date, timedelta
 
 from mb_logger import Logger
 from mb_wx_gui import MbWxToolbar, MbWxStatusbar
+from source.gui.wx_tt_setup_dialog import TtDbSetupDialog
 from source.gui.wx_tt_task_dialog import TtTaskDialog
-from source.tt_common import get_icon
+from source.tt_common import get_icon, GuiCol
 from source.ttdatabase import TTDatabase
 
-# Helper per colore/stile
-BG = "#2f2f2f"
-SIDEBAR = "#3a3a3a"
-TOPBAR = "#252525"
-ROW_BG = "#343434"
-TEXT = "#dcdcdc"
-ACCENT = "#b6e3c6"
 
 
-class TtDbSetupDialog(wx.Dialog):
-
-    ID_DEAL_ADD = wx.NewIdRef()
-    ID_DEAL_REMOVE = wx.NewIdRef()
-    ID_DEAL_EDIT = wx.NewIdRef()
-    ID_ACTIVITY_ADD = wx.NewIdRef()
-    ID_ACTIVITY_REMOVE = wx.NewIdRef()
-    ID_ACTIVITY_EDIT = wx.NewIdRef()
-
-    def __init__(self,parent_):
-        super().__init__(parent_)
-        self._build_ui()
-
-    def _build_ui(self):
-        main_sizer = wx.BoxSizer(wx.VERTICAL)
-        notebook = wx.Notebook(self)
-        page = wx.Panel(notebook)
-        notebook.AddPage(page, "Categories and Tags")
-
-        panel_sizer = wx.BoxSizer(wx.VERTICAL)
-
-        # Top: two columns (Categories, Activities)
-        columns_sizer = wx.BoxSizer(wx.HORIZONTAL)
-
-        # Categories column
-        cat_sizer = wx.BoxSizer(wx.VERTICAL)
-        cat_label = wx.StaticText(page, label="Categories")
-        cat_sizer.Add(cat_label, 0, wx.BOTTOM, 6)
-        self.cat_list = wx.ListBox(page, style=wx.LB_SINGLE)
-        cat_sizer.Add(self.cat_list, 1, wx.EXPAND)
-
-        # category buttons (horizontal row)
-        cat_btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.cat_add = wx.Button(page, self.ID_DEAL_ADD, label="+")
-        self.cat_remove = wx.Button(page, self.ID_DEAL_REMOVE, label="-")
-        self.cat_edit = wx.Button(page, self.ID_DEAL_EDIT, label="✎")
-        cat_btn_sizer.Add(self.cat_add, 0, wx.RIGHT, 6)
-        cat_btn_sizer.Add(self.cat_remove, 0, wx.RIGHT, 6)
-        cat_btn_sizer.Add(self.cat_edit, 0)
-        cat_sizer.Add(cat_btn_sizer, 0, wx.TOP, 6)
-
-        columns_sizer.Add(cat_sizer, 1, wx.EXPAND | wx.RIGHT, 10)
-
-        # Activities column
-        act_sizer = wx.BoxSizer(wx.VERTICAL)
-        act_label = wx.StaticText(page, label="Activities")
-        act_sizer.Add(act_label, 0, wx.BOTTOM, 6)
-        self.act_list = wx.ListBox(page)
-        act_sizer.Add(self.act_list, 1, wx.EXPAND)
-
-        act_btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.act_add = wx.Button(page, self.ID_ACTIVITY_ADD, label="+")
-        self.act_remove = wx.Button(page, self.ID_ACTIVITY_REMOVE, label="-")
-        self.act_edit = wx.Button(page, self.ID_ACTIVITY_EDIT, label="✎")
-        act_btn_sizer.Add(self.act_add, 0, wx.RIGHT, 6)
-        act_btn_sizer.Add(self.act_remove, 0, wx.RIGHT, 6)
-        act_btn_sizer.Add(self.act_edit, 0)
-        act_sizer.Add(act_btn_sizer, 0, wx.TOP, 6)
-
-        columns_sizer.Add(act_sizer, 1, wx.EXPAND)
-
-        panel_sizer.Add(columns_sizer, 1, wx.EXPAND | wx.ALL, 10)
-
-
-        page.SetSizer(panel_sizer)
-        main_sizer.Add(notebook, 1, wx.EXPAND)
-
-        # Bottom: Close button on right
-        btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        btn_sizer.AddStretchSpacer()
-        close_btn = wx.Button(self, wx.ID_CLOSE, label="Close")
-        btn_sizer.Add(close_btn, 0, wx.ALL, 8)
-        main_sizer.Add(btn_sizer, 0, wx.EXPAND)
-
-        self.SetSizer(main_sizer)
-
-        # Bind events
-        self.cat_list.Bind(wx.EVT_LISTBOX, self.on_deal_selected)
-        self.cat_add.Bind(wx.EVT_BUTTON, self.on_deal_add)
-        self.cat_remove.Bind(wx.EVT_BUTTON, self.on_deal_remove)
-        self.cat_edit.Bind(wx.EVT_BUTTON, self.on_deal_edit)
-
-        self.act_add.Bind(wx.EVT_BUTTON, self.on_activity_add)
-        self.act_remove.Bind(wx.EVT_BUTTON, self.on_activity_remove)
-        self.act_edit.Bind(wx.EVT_BUTTON, self.on_activity_edit)
-
-        close_btn.Bind(wx.EVT_BUTTON, lambda e: self.Close())
-
-    def on_deal_selected(self, event):
-        pass
-
-    def on_deal_add(self, event):
-        pass
-
-    def on_deal_remove(self,event):
-        pass
-
-    def on_deal_edit(self,event):
-        pass
-
-    def on_activity_add(self,event):
-        pass
-
-    def on_activity_remove(self,event):
-        pass
-
-    def on_activity_edit(self,event):
-        pass
 
 class CategoriesDialog(wx.Dialog):
 
@@ -329,6 +215,45 @@ class CategoriesDialog(wx.Dialog):
         dlg.Destroy()
 
 class TtDateRangeDialog(wx.Dialog):
+    """
+    Dialog for selecting a date range in a user-friendly manner.
+
+    The TtDateRangeDialog class provides a graphical interface for selecting
+    a range of dates using quick options (Today, Week, Month) and two calendar
+    widgets. The dialog ensures that the selected range is valid (the "From"
+    date is not later than the "To" date). Users can confirm their selection
+    with the "Apply" button.
+
+    Attributes
+    ----------
+    today_tc : wx.TextCtrl
+        Displays the current date in "Today" quick range.
+    week_tc : wx.TextCtrl
+        Displays the date range for the current week in the "Week" quick range.
+    month_tc : wx.TextCtrl
+        Displays the date range for the current month in the "Month" quick range.
+    cal_from : wx.adv.CalendarCtrl
+        Calendar widget for selecting the start date of the range.
+    cal_to : wx.adv.CalendarCtrl
+        Calendar widget for selecting the end date of the range.
+    result : tuple of (date, date) or None
+        The selected date range, containing the "From" and "To" dates as Python
+        `date` objects. This attribute is populated after the user clicks "Apply"
+        and closes the dialog.
+
+    Methods
+    -------
+    _calculate_week_range(d: date) -> tuple[date, date]
+        Calculates the start and end dates of the week for the given date.
+    _calculate_month_range(d: date) -> tuple[date, date]
+        Calculates the start and end dates of the month for the given date.
+    on_apply(event: wx.CommandEvent)
+        Event handler for applying the selected date range and closing the dialog.
+    on_from_changed(event: wx.adv.CalendarEvent)
+        Event handler to enforce validation when the "From" date is changed.
+    on_to_changed(event: wx.adv.CalendarEvent)
+        Event handler to enforce validation when the "To" date is changed.
+    """
     def __init__(self, parent, start_,end_):
         super().__init__(parent, title="Choose time slot", size=(560, 300))
 
@@ -439,10 +364,23 @@ class TtDateRangeDialog(wx.Dialog):
         self.EndModal(wx.ID_OK)
         self.Close()
 
-class SingleTask(wx.Panel):
+class TimeTask(wx.Panel):
+    """
+    Represents a panel for displaying detailed information about a task and its associated duration.
 
+    A TimeTask panel is designed to present the duration and details of a task within an application’s
+    user interface. This panel includes a visual representation of the task’s allocated hours,
+    along with task-specific metadata including its associated deal, activity, and description.
+    It provides a clean and structured layout for organizing task data.
+
+    Attributes:
+        duration (float): The duration of the task in hours, calculated from the number of minutes
+            provided in the task data.
+    """
     def __init__(self, parent, db_,task_):
         super().__init__(parent)
+
+        self.SetBackgroundColour(GuiCol.SIDEBAR.wx())
 
         def add_separator(s_):
             line = wx.Panel(self, size=(2, -1))
@@ -451,61 +389,75 @@ class SingleTask(wx.Panel):
 
         s = wx.BoxSizer(wx.HORIZONTAL)
 
+        self.duration = task_["minutes"] / 60
+        dur_label = wx.StaticText(self, label=f"{self.duration}h")
+        dur_label.SetForegroundColour(GuiCol.TEXT.wx())
+        dur_label.SetMinSize((100, -1))
+        dur_label.SetFont(wx.Font(14, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD))
+        s.Add(dur_label, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 8)
+
+        add_separator(s)
+
         v = wx.BoxSizer(wx.VERTICAL)
         deal_name = db_.find_deal_from_id(task_["deal"])
         activity_name = db_.find_activity_from_id(task_["activity"])
-        deal_label = wx.StaticText(self, label=deal_name if f"DEAL: {deal_name}" else "DEAL: ----",
-                                   style=wx.ALIGN_LEFT, size=(300,20))
-        deal_label.SetBackgroundColour(wx.Colour(0, 120, 215))
-        activity_label = wx.StaticText(self, label=activity_name if f"ACT: {activity_name}" else "ACT: ----",
-                                       style=wx.ALIGN_LEFT, size=(300,20))
-        activity_label.SetBackgroundColour(wx.Colour(0, 120, 215))
+        str = f"D: {deal_name} - A: {activity_name}"
+        info_label = wx.StaticText(self, label=str, style=wx.ALIGN_LEFT)
+        info_label.SetFont(wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD))
 
-        v.Add(deal_label, 0, wx.BOTTOM, 2)
-        v.Add(activity_label, 0)
-        s.Add(v, 0, wx.ALL | wx.EXPAND | wx.RIGHT, 8)
-
-        add_separator(s)
-
-        v = wx.BoxSizer(wx.VERTICAL)
         description_label = wx.StaticText(self, label=f"DESC: {task_["description"]}",style=wx.ALIGN_LEFT)
-        description_label.SetFont(wx.Font(9, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
-        v.Add(description_label, 1, wx.BOTTOM, 2)
-        s.Add(v, 1, wx.ALL | wx.EXPAND, 8)
+        description_label.SetFont(wx.Font(8, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_ITALIC, wx.FONTWEIGHT_NORMAL))
 
-        add_separator(s)
+        v.Add(info_label, 0, wx.TOP | wx.ALL | wx.EXPAND, 2)
+        v.Add(description_label, 0, wx.BOTTOM | wx.ALL | wx.EXPAND, 2)
+        s.Add(v, 1, wx.ALL | wx.EXPAND | wx.RIGHT, 8)
 
-        self.duration = task_["minutes"] / 60
-        dur_label = wx.StaticText(self, label=f"{self.duration}h")
-        dur_label.SetForegroundColour(TEXT)
-        dur_label.SetMinSize((80, -1))
-        s.Add(dur_label, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 8)
+
         self.SetSizer(s)
 
-class SingleSlot(wx.Panel):
+class DaySlot(wx.Panel):
+    """
+    Represents a panel for displaying information about a specific day, including tasks scheduled
+    for that day.
 
+    The class initializes UI components including a sidebar with date information and a main area
+    for displaying tasks. It integrates with a database and works with provided task data to create
+    a meaningful and interactive user interface.
+
+    Attributes:
+        task_list (list[TimeTask]): A list to store instances of TimeTask associated with the day.
+
+    Parameters:
+        parent (wx.Window): The parent window or panel to which this panel belongs.
+        date_ (datetime.date): The specific date this slot represents.
+        db_ : The database object used to manage task data for the day.
+        tasks (list[dict]): A list of task information where each task is represented as a dictionary.
+
+    """
     def __init__(self,parent,date_:datetime.date,db_,tasks:list[dict]):
         super().__init__(parent)
-
+        self.task_list: list[TimeTask] = []
         slot_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         sidebar = wx.Panel(self)
-        sidebar.SetBackgroundColour(SIDEBAR)
+        sidebar.SetBackgroundColour(GuiCol.SIDEBAR.wx())
         sidebar.SetMinSize((120, -1))
         day_sizer = wx.BoxSizer(wx.VERTICAL)
         day_lbl_big = wx.StaticText(sidebar, label=calendar.day_name[date_.weekday()] )
-        day_lbl_big.SetForegroundColour(TEXT)
+        day_lbl_big.SetForegroundColour(GuiCol.TEXT.wx())
         day_lbl_small = wx.StaticText(sidebar, label=f"{date_.year}/{date_.month}/{date_.day}")
-        day_lbl_small.SetForegroundColour(TEXT)
+        day_lbl_small.SetForegroundColour(GuiCol.TEXT.wx())
         day_sizer.Add(day_lbl_big, 0, wx.BOTTOM, 4)
         day_sizer.Add(day_lbl_small, 0)
         sidebar.SetSizer(day_sizer)
 
         tasks_area = wx.Panel(self)
         tasks_sizer = wx.BoxSizer(wx.VERTICAL)
-        for task in tasks:
-            row = SingleTask(tasks_area, db_, task)
-            tasks_sizer.Add(row, 0, wx.EXPAND | wx.BOTTOM, 6)
+        if tasks is not None:
+            for task in tasks:
+                row = TimeTask(tasks_area, db_, task)
+                self.task_list.append(row)
+                tasks_sizer.Add(row, 0, wx.EXPAND | wx.BOTTOM, 6)
         tasks_area.SetSizer(tasks_sizer)
 
         slot_sizer.Add(sidebar, 0, wx.EXPAND)
@@ -518,8 +470,8 @@ class TTMainWin(wx.Frame):
     ID_ABOUT = wx.NewIdRef()
 
     def __init__(self, db_:TTDatabase, parent=None):
-        super().__init__(parent, title="Hamster Time Tracker", size=(940,520))
-        self.tasks = None
+        super().__init__(parent, title="Staubli Time Tracker", size=(1200,600))
+        self.day_slot_list: list[DaySlot] = []
         self.db = db_
         today = datetime.date.today()
         self.start_date = today
@@ -529,13 +481,18 @@ class TTMainWin(wx.Frame):
 
         # Top toolbar definition
         top = MbWxToolbar(self,height=32)
-        top.SetBackgroundColour(BG)
+        top.SetBackgroundColour(GuiCol.BG.wx())
         self.back = top.add_img_button(get_icon("arrow-left.png"), position=wx.LEFT, align=wx.ALIGN_CENTER_VERTICAL, callback=self.cb_slot_backward)
         self.forw = top.add_img_button(get_icon("arrow-right.png"), position=wx.LEFT, align=wx.ALIGN_CENTER_VERTICAL, callback=self.cb_slot_forward)
         self.date_slot = top.add_text_button("Slot button",wx.LEFT,wx.ALIGN_CENTER_VERTICAL,self.cb_pop_date_slot)
         top.add_spacer(4)
+
+        self.today_slot = top.add_text_button("TODAY",wx.LEFT,wx.ALIGN_CENTER_VERTICAL,self.cb_slot_today)
+        self.week_slot = top.add_text_button("WEEK",wx.LEFT,wx.ALIGN_CENTER_VERTICAL,self.cb_slot_this_week)
+        top.add_spacer(4)
+
         plus = top.add_img_button(get_icon("plus.png"),position=wx.RIGHT)
-        plus.Bind(wx.EVT_BUTTON, self.on_add)
+        plus.Bind(wx.EVT_BUTTON, self.cb_add_time_task)
         top.add_img_button(get_icon("menu.png"),position=wx.RIGHT,align=wx.ALIGN_CENTER_VERTICAL, callback=self.cb_menu)
         self.menu = wx.Menu()
         self.menu.Append(self.ID_TRACK_SETUP, "Tracking settings")
@@ -546,21 +503,20 @@ class TTMainWin(wx.Frame):
 
         main_sizer.Add(top, 0, wx.EXPAND)
 
-
         # Content area
         content = wx.Panel(self)
-        content.SetBackgroundColour(BG)
+        content.SetBackgroundColour(GuiCol.BG.wx())
         content_sizer = wx.BoxSizer(wx.HORIZONTAL)
-
 
         # Data list area
         data_area = wx.Panel(content)
-        data_area.SetBackgroundColour(BG)
+        data_area.SetBackgroundColour(GuiCol.BG.wx())
         data_sizer = wx.BoxSizer(wx.VERTICAL)
         data_area.SetSizer(data_sizer)
+
         # Scrolled list
         self.scroller = wx.ScrolledWindow(data_area, style=wx.VSCROLL)
-        self.scroller.SetBackgroundColour(BG)
+        self.scroller.SetBackgroundColour(GuiCol.BG.wx())
         self.scroller.SetScrollRate(5,5)
         self.list_sizer = wx.BoxSizer(wx.VERTICAL)
         self.scroller.SetSizer(self.list_sizer)
@@ -571,8 +527,9 @@ class TTMainWin(wx.Frame):
 
         # Bottom total bar
         bottom = MbWxStatusbar(self,height=32)
-        bottom.SetBackgroundColour(BG)
+        bottom.SetBackgroundColour(GuiCol.BG.wx())
         self.total_label = bottom.add_text("Total: 0h")
+        self.total_label.SetMinSize((400, -1))
         main_sizer.Add(bottom, 0, wx.EXPAND)
 
         self.SetSizer(main_sizer)
@@ -580,8 +537,7 @@ class TTMainWin(wx.Frame):
         # prepare the window
         self.__update_slot_button()
         self.__populate_from_database(self.start_date,self.end_date)
-        self.refresh_total()
-
+        self.__refresh_total()
         self.Centre()
 
     def __update_slot_button(self):
@@ -590,9 +546,21 @@ class TTMainWin(wx.Frame):
         else:
             self.date_slot.SetLabel(f" {self.start_date} ")
 
-
     def __populate_from_database(self,start_date:datetime.date,end_date:datetime.date):
+        """
+        Populates the list of day slots for the specified date range.
 
+        This method is used to dynamically create and add day slots for each
+        date in the given range. It iterates from the start date to the end
+        date, clearing the current list, and adds slots for individual days
+        before updating the layout of the scroller.
+
+        Parameters:
+            start_date: datetime.date
+                The starting date of the range to be populated.
+            end_date: datetime.date
+                The ending date of the range to be populated.
+        """
         def daterange(start: datetime.date, end: datetime.date):
             current = start
             while current <= end:
@@ -602,11 +570,45 @@ class TTMainWin(wx.Frame):
         self.list_sizer.Clear(True)
 
         for d in daterange(start_date, end_date):
-            self.add_day_slot(d)
-            print(d)
+            self.__add_day_slot(d)
+            Logger().print(d)
 
         self.scroller.Layout()
-        self.refresh_total()
+
+    def __refresh_total(self):
+        total = 0
+        if self.day_slot_list:
+            for slot in self.day_slot_list:
+                if slot.task_list:
+                   total = sum(t.duration for t in slot.task_list) + total
+
+        self.total_label.SetLabel( f"Total: {total} [h]")
+
+    def __update_data(self):
+        self.__update_slot_button()
+        self.__populate_from_database(self.start_date,self.end_date)
+        self.__refresh_total()
+
+
+    def __add_day_slot(self, day_:datetime.date):
+        """
+        Adds a new day slot to the interface and updates the view.
+
+        This method initializes a new slot for tasks scheduled on the specified day.
+        It retrieves tasks for the day from the database, creates a slot instance,
+        adds the slot to the interface, and refreshes the total statistics.
+
+        Parameters:
+            day_ (datetime.date): The day for which the slot is being added.
+        """
+        tasks = self.db.find_tasks(day_,day_)
+        slot = DaySlot(self.scroller, day_, self.db, tasks)
+        self.list_sizer.Add(slot, 0, wx.EXPAND | wx.BOTTOM, 6)
+        self.scroller.Layout()
+        self.day_slot_list.append(slot)
+
+
+    # ---------- Callbacks  ----------
 
     def cb_pop_date_slot(self, evt):
         Logger().print("pop date slot")
@@ -615,11 +617,22 @@ class TTMainWin(wx.Frame):
             self.start_date, self.end_date = dlg.result
             Logger().print(f"Start: {self.start_date}\nEnd: {self.end_date}")
         dlg.Destroy()
-        self.__update_slot_button()
-        self.__populate_from_database(self.start_date,self.end_date)
+        self.__update_data()
+
+    def cb_slot_today(self, evt):
+        self.start_date = date.today()
+        self.end_date = date.today()
+        self.__update_data()
+
+    def cb_slot_this_week(self, evt):
+        today = date.today()
+        self.start_date = today - datetime.timedelta(days=today.weekday())
+        self.end_date = self.start_date + datetime.timedelta(days=6)
+        self.__update_data()
 
     def cb_slot_backward(self, evt):
         delta = self.end_date - self.start_date
+
         if self.start_date != self.end_date:
             delta = (self.end_date - self.start_date) + datetime.timedelta(days=1)
             self.start_date = self.start_date - delta
@@ -627,8 +640,7 @@ class TTMainWin(wx.Frame):
         else:
             self.start_date = self.start_date - datetime.timedelta(days=1)
             self.end_date = self.end_date - datetime.timedelta(days=1)
-        self.__update_slot_button()
-        self.__populate_from_database(self.start_date,self.end_date)
+        self.__update_data()
 
     def cb_slot_forward(self, evt):
         if self.start_date != self.end_date:
@@ -638,8 +650,21 @@ class TTMainWin(wx.Frame):
         else:
             self.start_date = self.start_date + datetime.timedelta(days=1)
             self.end_date = self.end_date + datetime.timedelta(days=1)
-        self.__update_slot_button()
-        self.__populate_from_database(self.start_date,self.end_date)
+        self.__update_data()
+
+    def cb_add_time_task(self, evt):
+        # dialog semplice per aggiungere una riga (solo demo)
+        dlg = TtTaskDialog(self, self.db, None)
+        if dlg.ShowModal() == wx.ID_OK:
+            try:
+                Logger().print("add task")
+            except Exception as ex:
+                Logger().print("Error adding a task")
+        dlg.Destroy()
+        self.__update_data()
+
+    def cb_about(self,evt):
+        pass
 
     def cb_menu(self, evt):
         btn = evt.GetEventObject()
@@ -650,35 +675,5 @@ class TTMainWin(wx.Frame):
     def cb_tracking_settings(self,evt):
         dlg = TtDbSetupDialog(self)
         dlg.ShowModal()
-        dlg.Destroy()
-
-    def cb_about(self,evt):
-        pass
-
-    def add_task(self, task_):
-        row = SingleTask(self.scroller, task_)
-        self.list_sizer.Add(row, 0, wx.EXPAND | wx.BOTTOM, 6)
-
-    def add_day_slot(self, day_:datetime.date):
-        tasks = self.db.find_tasks(day_,day_)
-        if len(tasks) != 0 or self.list_sizer.GetItemCount() == 0:
-            slot = SingleSlot(self.scroller,day_, self.db, tasks)
-            self.list_sizer.Add(slot, 0, wx.EXPAND | wx.BOTTOM, 6)
-            self.scroller.Layout()
-            self.refresh_total()
-
-    def refresh_total(self):
-        if self.tasks:
-            total = sum(t.duration for t in self.tasks)
-            self.total_label.SetLabel(f"Total: {total}h")
-
-    def on_add(self, evt):
-        # dialog semplice per aggiungere una riga (solo demo)
-        dlg = TtTaskDialog(self, self.db, None)
-        if dlg.ShowModal() == wx.ID_OK:
-            try:
-                Logger().print("add task")
-            except Exception as ex:
-                Logger().print("Error adding a task")
         dlg.Destroy()
 
