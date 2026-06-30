@@ -389,28 +389,37 @@ class TimeTask(wx.Panel):
 
         s = wx.BoxSizer(wx.HORIZONTAL)
 
-        self.duration = task_["minutes"] / 60
-        dur_label = wx.StaticText(self, label=f"{self.duration}h")
-        dur_label.SetForegroundColour(GuiCol.TEXT.wx())
-        dur_label.SetMinSize((100, -1))
-        dur_label.SetFont(wx.Font(14, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD))
-        s.Add(dur_label, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 8)
+        box_all = wx.BoxSizer(wx.HORIZONTAL)
+
+        box_info = wx.BoxSizer(wx.VERTICAL)
+        deal_name = db_.find_deal_from_id(task_["deal"])
+        deal_label = wx.StaticText(self, style=wx.ALIGN_LEFT, label=f"{deal_name}")
+        deal_label.MinSize = (400, -1)
+        box_info.Add(deal_label, 0, wx.TOP | wx.ALL | wx.EXPAND, 2)
+        activity_name = db_.find_activity_from_id(task_["activity"])
+        activity_label = wx.StaticText(self, style=wx.ALIGN_LEFT, label=f"{activity_name}")
+        box_info.Add(activity_label, 0, wx.BOTTOM | wx.ALL | wx.EXPAND, 2)
+        box_all.Add(box_info, 0, wx.TOP | wx.ALL | wx.EXPAND, 2)
+
+        add_separator(box_all)
+
+        box_desc = wx.BoxSizer(wx.VERTICAL)
+
+        description_label = wx.StaticText(self, label=f"{task_["description"]}",style=wx.ALIGN_LEFT)
+        description_label.SetFont(wx.Font(8, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_ITALIC, wx.FONTWEIGHT_NORMAL))
+        box_desc.Add(description_label, 0, wx.BOTTOM | wx.ALL | wx.EXPAND, 2)
+        box_all.Add(box_desc, 0, wx.BOTTOM | wx.ALL | wx.EXPAND, 2)
+
+        s.Add(box_all, 1, wx.ALL | wx.EXPAND | wx.RIGHT, 8)
 
         add_separator(s)
 
-        v = wx.BoxSizer(wx.VERTICAL)
-        deal_name = db_.find_deal_from_id(task_["deal"])
-        activity_name = db_.find_activity_from_id(task_["activity"])
-        str = f"D: {deal_name} - A: {activity_name}"
-        info_label = wx.StaticText(self, label=str, style=wx.ALIGN_LEFT)
-        info_label.SetFont(wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD))
-
-        description_label = wx.StaticText(self, label=f"DESC: {task_["description"]}",style=wx.ALIGN_LEFT)
-        description_label.SetFont(wx.Font(8, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_ITALIC, wx.FONTWEIGHT_NORMAL))
-
-        v.Add(info_label, 0, wx.TOP | wx.ALL | wx.EXPAND, 2)
-        v.Add(description_label, 0, wx.BOTTOM | wx.ALL | wx.EXPAND, 2)
-        s.Add(v, 1, wx.ALL | wx.EXPAND | wx.RIGHT, 8)
+        self.duration = task_["minutes"] / 60
+        dur_label = wx.StaticText(self, label=f"{self.duration}h")
+        dur_label.SetForegroundColour(GuiCol.TEXT.wx())
+        dur_label.SetMinSize((60, -1))
+        dur_label.SetFont(wx.Font(14, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD))
+        s.Add(dur_label, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 8)
 
 
         self.SetSizer(s)
@@ -445,6 +454,7 @@ class DaySlot(wx.Panel):
         day_sizer = wx.BoxSizer(wx.VERTICAL)
         day_lbl_big = wx.StaticText(sidebar, label=calendar.day_name[date_.weekday()] )
         day_lbl_big.SetForegroundColour(GuiCol.TEXT.wx())
+
         day_lbl_small = wx.StaticText(sidebar, label=f"{date_.year}/{date_.month}/{date_.day}")
         day_lbl_small.SetForegroundColour(GuiCol.TEXT.wx())
         day_sizer.Add(day_lbl_big, 0, wx.BOTTOM, 4)
@@ -568,7 +578,7 @@ class TTMainWin(wx.Frame):
                 current += datetime.timedelta(days=1)
 
         self.list_sizer.Clear(True)
-
+        self.day_slot_list.clear()
         for d in daterange(start_date, end_date):
             self.__add_day_slot(d)
             Logger().print(d)
